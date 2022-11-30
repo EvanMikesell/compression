@@ -18,9 +18,9 @@ import cv2
 import numpy as np
 import time
 import pillow_heif
+import tracemalloc
 
 pillow_heif.register_heif_opener()
-
 
 def compression_ratio(compressed_image_file_name, original_image_file_name):
     original_image_size = os.stat(original_image_file_name).st_size
@@ -31,6 +31,7 @@ def compression_ratio(compressed_image_file_name, original_image_file_name):
 
 
 def compress_image(original_image_file_name, file_extension, compression_quality):
+    tracemalloc.start()
     im = Image.open(original_image_file_name)
     rgb_im = im.convert('RGB')
     np_im = np.array(rgb_im)
@@ -50,13 +51,17 @@ def compress_image(original_image_file_name, file_extension, compression_quality
     mse = np.square(np.subtract(np_im, compressed_np)).mean()
 
     compressed_size, c_ratio = compression_ratio(compressed_image_file_name, original_image_file_name)
+    ram_usage = tracemalloc.get_traced_memory()[1] # peak ram usage
+    tracemalloc.stop()
 
     results = dict()
     results['MSE'] = mse
     results['PSNR'] = psnr
     results['Compressed Size'] = compressed_size
-    results['Compresion Ratio'] = c_ratio
+    results['Compression Ratio'] = c_ratio
     results['Time'] = compression_time
+    results['Ram Usage'] = ram_usage
+
 
     return results
 
